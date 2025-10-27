@@ -6,6 +6,7 @@ import { CreatePlayerDto } from './dto/create-player.dto';
 import { LoginPlayerDto } from './dto/login-player.dto';
 import { PlayerPokemon } from '../player-pokemon/player-pokemon.entity';
 import { Pokemon } from '../pokemon/pokemon.entity';
+import { PokeapiService } from '../common/services/pokeapi.service';
 
 @Injectable()
 export class PlayersService {
@@ -16,6 +17,7 @@ export class PlayersService {
         private readonly playerPokemonRepository: Repository<PlayerPokemon>,
         @InjectRepository(Pokemon)
         private readonly pokemonRepository: Repository<Pokemon>,
+        private readonly pokeapiService: PokeapiService,
     ) { }
 
     async register(createPlayerDto: CreatePlayerDto): Promise<Player> {
@@ -28,7 +30,36 @@ export class PlayersService {
             username: createPlayerDto.username,
             potions: 2,
         });
-        return this.playersRepository.save(newPlayer);
+        const saved = await this.playersRepository.save(newPlayer);
+
+        // Grant random starter on register (upsert into Pokemon, then create PlayerPokemon)
+        const starter = await this.pokeapiService.getRandomPokemon();
+        let starterDb = await this.pokemonRepository.findOne({ where: { apiId: starter.id } });
+        if (!starterDb) {
+            starterDb = this.pokemonRepository.create({
+                apiId: starter.id,
+                name: starter.name,
+                spriteUrl: starter.spriteUrl,
+                type1: starter.type1,
+                type2: starter.type2 ?? undefined,
+                baseHp: starter.hp,
+                baseAttack: starter.attack,
+                baseDefense: starter.defense,
+                baseSpeed: starter.speed,
+            });
+            await this.pokemonRepository.save(starterDb);
+        }
+
+        const starterCapture = this.playerPokemonRepository.create({
+            player: { id: saved.id } as Player,
+            pokemon: { id: starterDb.id } as Pokemon,
+            nickname: starter.name,
+            currentHp: starterDb.baseHp ?? starter.hp,
+            capturedAt: new Date(),
+        });
+        await this.playerPokemonRepository.save(starterCapture);
+
+        return saved;
     }
 
     async login(loginPlayerDto: LoginPlayerDto): Promise<{ playerId: number; token: string }> {

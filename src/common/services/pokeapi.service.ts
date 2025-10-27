@@ -6,6 +6,9 @@ import { WildPokemonResponse, PokemonStats } from '../interfaces/pokeapi.interfa
 @Injectable()
 export class PokeapiService {
     private readonly baseUrl = 'https://pokeapi.co/api/v2';
+    private pokemonCache = new Map<number, WildPokemonResponse>();
+    private nameCache = new Map<string, WildPokemonResponse>();
+    private typeCache = new Map<string, any>();
 
     constructor(private readonly httpService: HttpService) { }
 
@@ -16,6 +19,7 @@ export class PokeapiService {
 
     async getPokemonById(id: number): Promise<WildPokemonResponse> {
         try {
+            if (this.pokemonCache.has(id)) return this.pokemonCache.get(id)!;
             const response = await firstValueFrom(
                 this.httpService.get(`${this.baseUrl}/pokemon/${id}`),
             );
@@ -24,7 +28,7 @@ export class PokeapiService {
             const stats = this.extractStats(data.stats);
             const types = data.types.map((t: any) => t.type.name);
 
-            return {
+            const result: WildPokemonResponse = {
                 id: data.id,
                 name: data.name,
                 spriteUrl: data.sprites.front_default,
@@ -35,6 +39,9 @@ export class PokeapiService {
                 defense: stats.defense,
                 speed: stats.speed,
             };
+            this.pokemonCache.set(id, result);
+            this.nameCache.set(data.name.toLowerCase(), result);
+            return result;
         } catch (error) {
             throw new Error(`Error fetching Pokémon from PokeAPI: ${error.message}`);
         }
@@ -42,6 +49,8 @@ export class PokeapiService {
 
     async getPokemonByName(name: string): Promise<WildPokemonResponse> {
         try {
+            const key = name.toLowerCase();
+            if (this.nameCache.has(key)) return this.nameCache.get(key)!;
             const response = await firstValueFrom(
                 this.httpService.get(`${this.baseUrl}/pokemon/${name.toLowerCase()}`),
             );
@@ -50,7 +59,7 @@ export class PokeapiService {
             const stats = this.extractStats(data.stats);
             const types = data.types.map((t: any) => t.type.name);
 
-            return {
+            const result: WildPokemonResponse = {
                 id: data.id,
                 name: data.name,
                 spriteUrl: data.sprites.front_default,
@@ -61,6 +70,9 @@ export class PokeapiService {
                 defense: stats.defense,
                 speed: stats.speed,
             };
+            this.pokemonCache.set(data.id, result);
+            this.nameCache.set(key, result);
+            return result;
         } catch (error) {
             throw new Error(`Error fetching Pokémon from PokeAPI: ${error.message}`);
         }
@@ -68,9 +80,12 @@ export class PokeapiService {
 
     async getTypeEffectiveness(typeName: string): Promise<any> {
         try {
+            const key = typeName.toLowerCase();
+            if (this.typeCache.has(key)) return this.typeCache.get(key);
             const response = await firstValueFrom(
                 this.httpService.get(`${this.baseUrl}/type/${typeName.toLowerCase()}`),
             );
+            this.typeCache.set(key, response.data);
             return response.data;
         } catch (error) {
             throw new Error(`Error fetching type data from PokeAPI: ${error.message}`);

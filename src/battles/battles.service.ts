@@ -38,8 +38,10 @@ export class BattlesService {
         const playerPokemon = await this.playerPokemonRepository.findOne({ where: { id: startBattleDto.playerPokemonId }, relations: ['pokemon'] });
         if (!playerPokemon || !playerPokemon.pokemon) throw new BadRequestException('Player Pokémon not found or invalid');
 
-        // Fetch wild Pokémon from PokeAPI
-        const wild = await this.pokeapiService.getRandomPokemon();
+        // Fetch wild Pokémon from PokeAPI (use provided apiId if present)
+        const wild = startBattleDto.wildApiId
+            ? await this.pokeapiService.getPokemonById(startBattleDto.wildApiId)
+            : await this.pokeapiService.getRandomPokemon();
 
         // Upsert wild pokemon into local Pokemon table by apiId
         let wildDb = await this.pokemonRepository.findOne({ where: { apiId: wild.id } });
