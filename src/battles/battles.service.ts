@@ -80,7 +80,6 @@ export class BattlesService {
             wildCurrentHp: wildBaseHp,
             wildAttack: wildDb.baseAttack ?? wild.attack,
             wildDefense: wildDb.baseDefense ?? wild.defense,
-            wildType1: wildDb.type1 ?? wild.type1,
             wildType2: wildDb.type2 ?? (wild.type2 ?? null),
         });
 
@@ -96,6 +95,8 @@ export class BattlesService {
                 type1: battle.wildType1,
                 type2: battle.wildType2,
                 hp: battle.wildCurrentHp,
+                attack: battle.wildAttack,
+                defense: battle.wildDefense,
             },
         };
     }
