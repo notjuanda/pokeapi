@@ -32,7 +32,7 @@ export class PlayerPokemonService {
         });
 
         if (count >= 10) {
-            throw new BadRequestException('Player already has 10 Pokémon (max limit reached)');
+            throw new BadRequestException('Ya cuentas con 10 pokemones');
         }
 
         // Check for duplicate capture
