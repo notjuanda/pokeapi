@@ -44,7 +44,7 @@ export class PlayerPokemonService {
         });
 
         if (existing) {
-            throw new BadRequestException('Player already has this Pokémon captured');
+            throw new BadRequestException('El jugador ya capturo este pokemon');
         }
 
         // Create capture record
